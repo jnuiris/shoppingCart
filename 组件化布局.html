@@ -99,60 +99,55 @@
       `
     }
     var CartList = {
+        props: ['list'],
+        //  因为要操作input中的数据，有的同学可能会想到用v-model来做，但是我们的原则是不操作props中的数据，直接展示
+        //  blur事件比较好，失去焦点的时候更新
+        //  .pre禁止a标签跳转
         template: `
         <div>
-          <div class="item">
-            <img src="img/a.jpg"/>
-            <div class="name"></div>
+          <div :key="item.id" v-for="item in list" class="item">
+            <img :src="item.img"/>
+            <div class="name">{{item.name}}</div>
             <div class="change">
-              <a href="">－</a>
-              <input type="text" class="num" />
-              <a href="">＋</a>
+              <a href="" @click.prevent="sub(item.id)">－</a>
+              <input type="text" class="num" :value="item.num" @blur="changeNum(item.id, $event)"/>
+              <a href="" @click.prevent="add(item.id)">＋</a>
             </div>
-            <div class="del">×</div>
-          </div>
-          <div class="item">
-            <img src="img/b.jpg"/>
-            <div class="name"></div>
-            <div class="change">
-              <a href="">－</a>
-              <input type="text" class="num" />
-              <a href="">＋</a>
-            </div>
-            <div class="del">×</div>
-          </div>
-          <div class="item">
-            <img src="img/c.jpg"/>
-            <div class="name"></div>
-            <div class="change">
-              <a href="">－</a>
-              <input type="text" class="num" />
-              <a href="">＋</a>
-            </div>
-            <div class="del">×</div>
-          </div>
-          <div class="item">
-            <img src="img/d.jpg"/>
-            <div class="name"></div>
-            <div class="change">
-              <a href="">－</a>
-              <input type="text" class="num" />
-              <a href="">＋</a>
-            </div>
-            <div class="del">×</div>
-          </div>
-          <div class="item">
-            <img src="img/e.jpg"/>
-            <div class="name"></div>
-            <div class="change">
-              <a href="">－</a>
-              <input type="text" class="num" />
-              <a href="">＋</a>
-            </div>
-            <div class="del">×</div>
+            <div class="del" @click="del(item.id)">×</div>
           </div>
         </div>
-      `
+      `,
+        methods: {
+            //  不建议直接在子组件中操作props数据，建议直接在父组件中进行数据操作
+            del: function (id) {
+                //  把id通过自定义事件的方式传递给父组件
+                this.$emit('cart-del', id);
+            },
+            changeNum: function (id, event) {
+                //  处理逻辑也是在父组件中完成的
+                //  因此在这里还是返回id
+                //  把事件对象传递给参数
+                //  通过对象的方式传两个数据过去
+                this.$emit('change-num', {
+                    type: 'change',
+                    id: id,
+                    num: event.target.value
+                })
+            },
+            sub: function (id) {
+                this.$emit('change-num', {
+                    id: id,
+                    //  type是自定义的
+                    type: 'sub'
+                });
+            },
+            add: function (id) {
+                this.$emit('change-num', {
+                    id: id,
+                    type: 'add'
+                });
+            }
+        }
     }
     var CartTotal = {
         props: ['list'],
@@ -213,7 +208,7 @@
         template: `
         <div class='cart'>
           <cart-title :uname="name"></cart-title>
-          <cart-list></cart-list>
+          <cart-list :list="list" @cart-del="delCart($event)" @change-num="changeNum($event)"></cart-list>
           <cart-total :list="list"></cart-total>
         </div>
       `,
@@ -221,8 +216,63 @@
             'cart-title': CartTitle,
             'cart-list': CartList,
             'cart-total': CartTotal
-        }
-    });
+        },
+        methods: {
+            delCart: function (id) {
+                //  根据id删除list中对应的数据
+                //  1.找到id所对应的数据的索引
+                var index = this.list.findIndex(item => {
+                    return item.id == id;
+                });
+                //  2.根据索引删除对应数据
+                //  splice的第一个参数表示要删除的元素的索引，第二个参数为所要删除的个数
+
+                this.list.splice(index, 1);
+            },
+            changeNum: function (val) {
+                // console.log(val);
+                //  父组件需要根据子组件传递过来的数据更新list中对应的数据
+                // this.list.some(item => {
+                //     if(item.id == val.id) {
+                //         item.num = val.num;
+                //         //  终止遍历
+                //         //  some方法的规则: return true
+                //         return true;
+                //     }
+                // })
+                // 分为三种情况进行处理：输入域变更，加号变更，减号变更
+                if (val.type == 'change') {
+                    this.list.some(item => {
+                        if (item.id == val.id) {
+                            item.num = val.num;
+                            //  终止遍历
+                            //  some方法的规则: return true
+                            return true;
+                        }
+                    });
+                } else if (val.type == 'sub') {
+                    //  减一操作
+                    this.list.some(item => {
+                        if (item.id == val.id) {
+                            item.num -= 1;
+                            //  终止遍历
+                            //  some方法的规则: return true
+                            return true;
+                        }
+                    });
+                } else {
+                    //  加一操作
+                    this.list.some(item => {
+                        if (item.id == val.id) {
+                            item.num += 1;
+                            //  终止遍历
+                            //  some方法的规则: return true
+                            return true;
+                        }
+                    });
+                }
+            }
+        }});
     var vm = new Vue({
         el: '#app',
         data: {
