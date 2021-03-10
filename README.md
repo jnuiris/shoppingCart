@@ -2,7 +2,7 @@
 使用Vue开发购物车
 <br>
 最终效果如下:
-<img src="./img/捕获1.png">
+![image](https://github.com/jnuiris/shoppingCart/blob/main/img/%E6%8D%95%E8%8E%B71.PNG)
 <br>
 <p>
 业务功能有:
